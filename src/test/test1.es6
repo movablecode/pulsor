@@ -49,7 +49,41 @@ describe('Pulsor Basic - Creation', ()=>{
     // assert(kk[user2]===2);
     // assert(kk[user]===1);
   });
-  it ('Updated Buffer', ()=>{
+  it ('Define 2', ()=>{
+    let User2 = Pulsor.define('user2',{
+      fields: [
+        ['name',{nid:1}],
+        'age',
+        ['email',{nid:2}]
+      ]
+    });
+    assert(User2.fieldCount()===4);
+    assert(User2.field('email'));
+    let field = User2.fieldN(2);
+    assert(field);
+    assert(field.Name==='email');
+    assert(field.NID===2);
+    let user2 = User2.instance();
+    assert(user2.set('id','movablecode'));
+    let send_buf;
+    let c = {
+      emit: (raw)=>{
+        // send_buf = raw;
+        send_buf = raw.slice();
+        console.log('EMIT: ',raw);
+      }
+    }
+    let sub = Pulsor.newSubscriber(c);
+    c._sub = sub;
+    sub.subscribe(user2);
+    user2.set('name','Movablecode');
+    user2.set('email','sangmin.lna@gmail.com');
+    user2.set('age',41);
+    user2.save();
+    let obj = send_buf[0];
+    let data = send_buf[1];
+    assert(obj[0]==='user2');
+    assert(obj[1]==='movablecode');
   });
   it ('Subscribers', ()=>{
     let c = {
@@ -72,6 +106,7 @@ describe('Pulsor Basic - Creation', ()=>{
     assert(user.set('age',27));
     assert(user.set('name','sangmin')===false);
     user.save();
+    sub.obsolete();
   });
   it ('Aliased Field Set', ()=>{
   });

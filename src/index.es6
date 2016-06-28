@@ -420,7 +420,7 @@ class Pulsor {
           model.addField(field_opt,{});
           break;
         case 'object':
-          if (v instanceof Array) {
+          if (field_opt instanceof Array) {
             model.addField(field_opt[0],field_opt[1]);
           }
           else {
