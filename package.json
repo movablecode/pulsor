@@ -1,25 +1,25 @@
 {
-  "name": "pulserjs",
-  "version": "0.1.0",
+  "name": "pulsor",
+  "version": "0.2.0",
   "description": "Hierarchical Object Publisher",
-  "main": "index.js",
+  "main": "dist/index.js",
   "scripts": {
     "test": "gulp test"
   },
   "repository": {
     "type": "git",
-    "url": "git+https://github.com/movablecode/pulserjs.git"
+    "url": "git+https://github.com/movablecode/pulsor.git"
   },
   "keywords": [
-    "pulser",
+    "pulsor",
     "pubsub"
   ],
   "author": "movablecode <sangmin.lna@gmail.com>",
   "license": "MIT",
   "bugs": {
-    "url": "https://github.com/movablecode/pulserjs/issues"
+    "url": "https://github.com/movablecode/pulsor/issues"
   },
-  "homepage": "https://github.com/movablecode/pulserjs#readme",
+  "homepage": "https://github.com/movablecode/pulsor#readme",
   "devDependencies": {
     "babel": "^6.5.2",
     "babel-core": "^6.7.4",

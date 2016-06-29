@@ -443,4 +443,4 @@ class Pulsor {
 }
 
 let pulsor = new Pulsor();
-export default pulsor;
+module.exports = pulsor;
