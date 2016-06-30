@@ -33,33 +33,19 @@ let subscriber_seq = 0;
 
 let newSubscriberID = ()=>{ return (++subscriber_seq).toString(); }
 
-//  update buffer
-let cur_mi;
-let ubuf = [];  //  update buffer
-let cur_fi_arr = [];
-
-function push_ubuf(mi,fi,value) {
-  if (cur_mi!==mi) {
-    cur_mi = mi;
-    //  push  [model_name,instance_id]
-    ubuf.push([cur_mi.getModelName(),cur_mi.getID()]);
-    //  push  [fi,value] pair
-    cur_fi_arr = [];
-    ubuf.push(cur_fi_arr);
-  }
-  cur_fi_arr.push(fi);
-  cur_fi_arr.push(value);
+//
+let pufp_buf = [];
+function push_updated_field_publisher(fsp) {
+  pufp_buf.push(fsp);
+}
+function flush_updated_field_publisher() {
+  pufp_buf.forEach(a=>{
+    a.flush();
+  });
+  clearArray(pufp_buf);
 }
 function confirm_ubuf() {
   console.log(ubuf);
-}
-function clear_ubuf() {
-  clearArray(ubuf);
-  cur_mi = null;
-}
-function emit_ubuf() {
-
-  clear_ubuf();
 }
 
 
@@ -134,13 +120,13 @@ class Subscriber {
     this.obsolete();
     subscriber_pool.push(this);
   }
-  consume(raw) {
+  consume(data) {
     if (this._consumer) {
-      this._consumer.emit(raw);
+      this._consumer.emit(data);
     }
   }
-  emit(raw) {this.consume(raw);}
-  onPublish(data) {this.consume(data);}
+  emit(data) {this.consume(data);}
+  onPublish(data,seq) {this.consume(data);}
   static instance(consumer,fn) {
     let subs;
     if (subscriber_pool.length>0) {
@@ -208,17 +194,17 @@ class Publisher {
       else return false;
     }
   }
-  onPublish(data) {
+  onPublish(data,seq) {
     for (let k in this._subscribers) {
       let s = this._subscribers[k];
-      s.emit(data);
+      s.consume(data);
     }
     return true;
   }
   publishUp(data,seq) {
     if (this._seq===seq) return false;
     this._seq = seq;
-    let res = this.onPublish(data);
+    let res = this.onPublish(data,seq);
     if (!res) return false;
     let parents = this._parents;
     if (parents) {
@@ -235,6 +221,58 @@ class Publisher {
   }
 }
 
+/**
+*/
+class FieldSetPublisher extends Publisher {
+  constructor() {
+    super();
+    this._ubuf = [];
+    this._fi_buf = [];
+    this._in_update_buffer = false;
+  }
+  isFlushable() {return this._in_update_buffer;}
+  resetUpdateBuffer() {this._in_update_buffer=false;}
+  onUpdate(data) {
+    //  data maybe FieldInstance ...
+    if (this._ubuf.length<1) {
+      this._ubuf.push([this.getModelName(),this.getID()]);
+      this._fi_buf = [];
+      this._ubuf.push(this._fi_buf);
+    }
+    let fi;
+    if (data.getNid()>-1) {
+      if (data.getNid()>0) {
+        fi = data.getNid();
+      }
+    }
+    else {
+      fi = data.getName();
+    }
+    if (fi) {
+      this._fi_buf.push(fi);
+      this._fi_buf.push(data.get());
+    }
+    if (!this._in_update_buffer) {
+      push_updated_field_publisher(this);
+      this._in_update_buffer = true;
+    };
+    return false;
+  }
+  flush() {
+    if (this._in_update_buffer) {
+      this.publishUp(this._ubuf,newPubSeq());
+      clearArray(this._ubuf);
+      this._in_update_buffer = false;
+    }
+  }
+  save() {
+    flush_updated_field_publisher();
+  }
+  static flushAllPublisher() {
+    flush_updated_field_publisher();
+  }
+}
+
 
 /**
   Pulsor Field
@@ -248,6 +286,9 @@ class PulsorField extends Publisher {
   get Name() {return this._name;}
   get NID() {return this._nid;}
   set NID(v) {this._nid=v;}
+
+  getNid() {return this._nid;}
+  getName() {return this._name;}
 }
 
 
@@ -274,11 +315,25 @@ class PulsorFieldInstance extends Publisher {
   }
 }
 
+class PulsorFieldSet extends FieldSetPublisher {
+  constructor() {
+    super();
+    this._mi = null;            //  model instance
+    this._change_only = true;   //  .
+  }
+  onUpdate() {
+    //
+  }
+}
+
+class PulsorFieldSetInstance extends FieldSetPublisher {
+}
+
 
 /**
   Pulsor Model
 */
-class PulsorModel extends Publisher {
+class PulsorModel extends FieldSetPublisher {
   constructor(name) {
     super();
     this._name = name;
@@ -313,7 +368,7 @@ class PulsorModel extends Publisher {
 /**
   Pulsor Model Instance
 */
-class PulsorModelInstance extends Publisher {
+class PulsorModelInstance extends FieldSetPublisher {
   constructor(model) {
     super(model.getName());
     this._model = model;
@@ -377,22 +432,23 @@ class PulsorModelInstance extends Publisher {
     if (fi) return fi.set(value);
     else return false;
   }
-  onUpdate(data) {
-    if (data.getNid()>-1) {
-      if (data.getNid()>0) {
-        push_ubuf( this, data.getNid(),data.get() );
-      }
-    }
-    else {
-      push_ubuf( this, data.getName(),data.get() );
-    }
-    return false;
-  }
-  save() {
-    this.publishUp(ubuf,newPubSeq());
-    clear_ubuf();
-  }
+  // onUpdate(data) {
+  //   if (data.getNid()>-1) {
+  //     if (data.getNid()>0) {
+  //       push_ubuf( this, data.getNid(),data.get() );
+  //     }
+  //   }
+  //   else {
+  //     push_ubuf( this, data.getName(),data.get() );
+  //   }
+  //   return false;
+  // }
+  // save() {
+  //   this.publishUp(ubuf,newPubSeq());
+  //   clear_ubuf();
+  // }
 }
+
 
 
 /**
@@ -439,6 +495,9 @@ class Pulsor {
   }
   newSubscriber(consumer,fn) {
     return Subscriber.instance(consumer,fn);
+  }
+  flushAll() {
+    flush_updated_field_publisher();
   }
 }
 

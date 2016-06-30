@@ -37,7 +37,7 @@ describe('Pulsor Basic - Creation', ()=>{
     assert(user.set('name','sangmin'));
     assert(user.get('name')==='sangmin');
     user.set('age',17);
-    user.save();
+    // user.save();
     let user2 = User.instance();
     assert(user2.set('id','movablecode'));
     user2.set('name','Movablecode');
@@ -79,11 +79,19 @@ describe('Pulsor Basic - Creation', ()=>{
     user2.set('name','Movablecode');
     user2.set('email','sangmin.lna@gmail.com');
     user2.set('age',41);
-    user2.save();
-    let obj = send_buf[0];
-    let data = send_buf[1];
-    assert(obj[0]==='user2');
-    assert(obj[1]==='movablecode');
+    // user2.save();
+    // let obj = send_buf[0];
+    // let data = send_buf[1];
+    // assert(obj[0]==='user2');
+    // assert(obj[1]==='movablecode');
+
+    let user3 = User2.instance();
+    assert(user3.set('id','qnix'));
+    sub.subscribe(user3);
+    user3.set('name','QNIX keyboard');
+    user3.set('email','qnix@gmail.com');
+    user3.set('age',19);
+    Pulsor.flushAll();
   });
   it ('Subscribers', ()=>{
     let c = {
