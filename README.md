@@ -1,18 +1,22 @@
-# Pulsor   (under construction...)
+# Pulsor
 
 Hierarchical Object Publisher.
+
+
+## Page under construction...
+
 
 **Pulsor** is simple and minimal javascript [publish/subscribe pattern](https://en.wikipedia.org/wiki/Publish%E2%80%93subscribe_pattern) implementation with hierarchical publishing.
 
 Pulsor's Object Publication is **very efficient**. because it distribute **changed properties only**, not a entire snapshot.
 
 It is for
-- **efficient Realtime-Pushing** via [WebSocket]()
+- **Efficient Realtime-Pushing** via [WebSocket]()
 - **HTML UI rendering** especially with [React](https://facebook.github.io/react/)
-- generic pub/sub via TCP/IP native socket.
-- simplified in-process Message-Router/Bus.
+- Generic pub/sub via TCP/IP native socket.
+- Simplified in-process [Message-Router/Bus]().
 
-also, it is used for [Strobe](#). (declarative client-side javascript framework)
+also, it is used for [Strobe](#). (declarative client-side javascript framework using [React](https://facebook.github.io/react/))
 
 ## Examples
 
