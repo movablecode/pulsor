@@ -18,6 +18,9 @@ let mapCounter = (map,field,v=1)=>{
   map[field] = map[field]+v;
   return map[field];
 }
+let isEmptyObject = (o)=>{
+  return (Object.keys(o).length===0);
+}
 let hasKey = (o,key)=>{
   let key_type = typeof o[key];
   return ((key_type!=='undefined') && (key_type!==null));
@@ -48,6 +51,48 @@ function confirm_ubuf() {
   console.log(ubuf);
 }
 
+/**
+  Pulsor Updater
+*/
+class PulsorUpdater {
+  constructor(publisher) {
+    this._publisher = publisher;
+    this._ubuf = [];
+    this._instance = null;
+    this._data = [];
+    this._in_updating = false;
+  }
+  get Buffer() {return this._ubuf;}
+  trySetFlushable() {
+    if (!this._in_updating) {
+      push_updated_field_publisher(this._publisher);
+      this._in_updating = true;
+    };
+  }
+  pushData(obj,index,value) {
+    if (this._instance!==obj) {
+      this._instance = obj;
+      this._data = [];
+      this._ubuf.push(obj.getPubId());
+      this._ubuf.push(this._data);
+    }
+    this._data.push(index);
+    this._data.push(value);
+  }
+  flush() {
+    if (this._in_updating) {
+      this._publisher.publishUp(this._ubuf,newPubSeq());
+      this.clear();
+      this._in_updating = false;
+    }
+  }
+  clear() {
+    clearArray(this._ubuf);
+    this._instance = null;
+    clearArray(this._data);
+    this._in_updating = false;
+  }
+}
 
 /**
   Subscriber
@@ -57,14 +102,15 @@ class Subscriber {
     this._id = newSubscriberID();
     this._consumer = consumer;
     this._subscriptions = {};
+    this._updater = new PulsorUpdater(this);
   }
   get SubsID() {return this._id;}
   setConsumer(consumer) {this._consumer = consumer;}
   incSubscription(p,v=1) {
-    let obj = this._subscriptions[p.PubID];
+    let obj = this._subscriptions[p.PubNID];
     if (!obj) {
       obj = [p,1];
-      this._subscriptions[p.PubID] = obj;
+      this._subscriptions[p.PubNID] = obj;
     }
     else obj[1] += v;
     return obj;
@@ -75,11 +121,11 @@ class Subscriber {
   deleteSubscription(p) {
     let obj = this.incSubscription(p,-1);
     if (obj[1]<1) {
-      delete this._subscriptions[p.PubID];
+      delete this._subscriptions[p.PubNID];
     }
   }
   subscribe(p) {
-    if (!hasKey(this._subscriptions,p.PubID)) {
+    if (!hasKey(this._subscriptions,p.PubNID)) {
       p.subscribe(this);
       return true;
     }
@@ -89,7 +135,7 @@ class Subscriber {
     }
   }
   unsubscribe(p) {
-    if (hasKey(this._subscriptions,p.PubID)) {
+    if (hasKey(this._subscriptions,p.PubNID)) {
       let obj = this.incSubscription(p,-1);
       if (obj[1]<1) {
         p.unsubscribe(this);
@@ -99,7 +145,7 @@ class Subscriber {
     return false;
   }
   subscriptionCount(p) {
-    let obj = this._subscriptions[p.PubID];
+    let obj = this._subscriptions[p.PubNID];
     if (obj) {
       return obj[1];
     }
@@ -127,6 +173,19 @@ class Subscriber {
   }
   emit(data) {this.consume(data);}
   onPublish(data,seq) {this.consume(data);}
+  pushPartial(obj,index,value) {
+    if (this._consumer) {
+      // this._consumer.pushPartial(obj,index,value);
+      this._updater.pushData(obj,index,value);
+      this._updater.trySetFlushable();
+    }
+  }
+  flush() {
+    this._updater.flush();
+  }
+  publishUp(buf,seq) {
+    this.consume(buf);
+  }
   static instance(consumer,fn) {
     let subs;
     if (subscriber_pool.length>0) {
@@ -153,10 +212,11 @@ function newPubSeq() {return pub_seq++;}
 class Publisher {
   constructor() {
     // this._parents = {};
-    this._pub_id = newPublisherID();
+    this._pub_nid = newPublisherID();
     this._seq = 0;
   }
-  get PubID() {return this._pub_id;}
+  get PubNID() {return this._pub_nid;}
+  getPubId() {return this._pub_nid.toString();}
   linkParent(parent) {
     if (!this._parents) this._parents={};
     this._parents[parent] = parent;
@@ -174,6 +234,10 @@ class Publisher {
     s.deleteSubscription(this);
     delete this._subscribers[s.SubsID];
   }
+  hasSubscribers() {
+    return ((this._subscribers) && (!isEmptyObject(this._subscribers)));
+  }
+  getSubscribers() {return this._subscribers;}
   // setOnUpdate(fn) {this.onUpdate = fn;}
   /**
   */
@@ -222,23 +286,16 @@ class Publisher {
 }
 
 /**
+  Field-Set Publisher
 */
 class FieldSetPublisher extends Publisher {
   constructor() {
     super();
-    this._ubuf = [];
-    this._fi_buf = [];
+    this._updater = new PulsorUpdater(this);
     this._in_update_buffer = false;
   }
-  isFlushable() {return this._in_update_buffer;}
-  resetUpdateBuffer() {this._in_update_buffer=false;}
   onUpdate(data) {
     //  data maybe FieldInstance ...
-    if (this._ubuf.length<1) {
-      this._ubuf.push([this.getModelName(),this.getID()]);
-      this._fi_buf = [];
-      this._ubuf.push(this._fi_buf);
-    }
     let fi;
     if (data.getNid()>-1) {
       if (data.getNid()>0) {
@@ -249,27 +306,13 @@ class FieldSetPublisher extends Publisher {
       fi = data.getName();
     }
     if (fi) {
-      this._fi_buf.push(fi);
-      this._fi_buf.push(data.get());
+      this._updater.pushData(this,fi,data.get());
     }
-    if (!this._in_update_buffer) {
-      push_updated_field_publisher(this);
-      this._in_update_buffer = true;
-    };
+    this._updater.trySetFlushable();
     return false;
   }
   flush() {
-    if (this._in_update_buffer) {
-      this.publishUp(this._ubuf,newPubSeq());
-      clearArray(this._ubuf);
-      this._in_update_buffer = false;
-    }
-  }
-  save() {
-    flush_updated_field_publisher();
-  }
-  static flushAllPublisher() {
-    flush_updated_field_publisher();
+    this._updater.flush();
   }
 }
 
@@ -296,13 +339,20 @@ class PulsorField extends Publisher {
   Pulsor Field Instance
 */
 class PulsorFieldInstance extends Publisher {
-  constructor(field) {
+  constructor(mi,field) {
     super();
+    this._mi = mi;
     this._field = field;
     this._value = null;
   }
   getName() {return this._field.Name;}
   getNid() {return this._field.NID;}
+  getFieldID() {
+    if (this._field.NID>-1) {
+      return this._field.NID;
+    }
+    return this._field.Name;
+  }
   get() {return this._value;}
   set(value) {
     let affected = false;
@@ -313,20 +363,85 @@ class PulsorFieldInstance extends Publisher {
     }
     return affected;
   }
+  onUpdate(data) {
+    if (this.hasSubscribers()) {
+      let subs = this.getSubscribers();
+      for (let k in subs) {
+        let s = subs[k];
+        // console.log(this._mi.getPubId(),this.getFieldID(),this.get());
+        s.pushPartial(this._mi,this.getFieldID(),this.get());
+      }
+    }
+    return true;
+  }
 }
 
+/**
+  Field Set Schema
+*/
 class PulsorFieldSet extends FieldSetPublisher {
   constructor() {
     super();
-    this._mi = null;            //  model instance
-    this._change_only = true;   //  .
+    this._model = null;         //  model schema
+    this._change_only = true;   //  change only flag
+    this._fields = {};
   }
-  onUpdate() {
-    //
+  isChangeOnly() {return this._change_only;}
+  setChangeOnly(v) {this._change_only=v;}
+  addField(name) {
+    let field = this._model.field(name);
+    field.linkParent(this);
+    this._fields[name] = field;
+  }
+  makeSnapshot(method='push') {
+    let json = {};
+    for (let k in this._fields) {
+      let fi = this._fields[k];
+      json[fi.getName()] = fi.get();
+    }
+    let obj = {jsonrpc:'2.0',method:method,params:json};
+    return obj;
+  }
+  instance(model_instance) {
+    this._mi = model_instance;
+    return PulsorFieldSetInstance(this);
   }
 }
 
+/**
+  Field Set Instance
+*/
 class PulsorFieldSetInstance extends FieldSetPublisher {
+  constructor(field_set) {
+    super();
+    this._field_set = field_set;
+  }
+  onUpdate(data) {
+    if (this._field_set.isChangeOnly()) {
+      super.onUpdate(data);
+    }
+    else {
+      this.trySetFlushable();
+    }
+    return false;
+  }
+  flush() {
+    if (this._in_update_buffer) {
+      let data;
+      if (this._field_set.isChangeOnly()) {
+        // data = this._ubuf;
+        data = this._updater.Buffer;
+        this.publishUp(data,newPubSeq());
+        // clearArray(this._ubuf);
+        this._updater.clear();
+      }
+      else {
+        data = this._field_set.makeSnapshot();
+        this.publishUp(data,newPubSeq());
+      }
+      this._in_update_buffer = false;
+    }
+  }
 }
 
 
@@ -379,8 +494,9 @@ class PulsorModelInstance extends FieldSetPublisher {
   getModelName() {return this._model.getName();}
   // getPubID() {return this._model.getName()+'.'+this.getN(0);}
   getID() {return this.getN(0);}
+  getPubId() {return [this._model.getName(),this.getN(0)];}
   addField0(field) {
-    let fi = new PulsorFieldInstance(field);
+    let fi = new PulsorFieldInstance(this,field);
     fi.linkParent(this);
     if (field.NID>-1) {
       this._nfields[field.NID] = fi;
@@ -401,6 +517,12 @@ class PulsorModelInstance extends FieldSetPublisher {
       return this.addField0(field);
     }
     return null;
+  }
+  getField(name) {
+    return this._fields[name];
+  }
+  getFieldN(nid) {
+    return this._nfields[index];
   }
   get(name) {
     let fi = this._fields[name];
@@ -432,21 +554,6 @@ class PulsorModelInstance extends FieldSetPublisher {
     if (fi) return fi.set(value);
     else return false;
   }
-  // onUpdate(data) {
-  //   if (data.getNid()>-1) {
-  //     if (data.getNid()>0) {
-  //       push_ubuf( this, data.getNid(),data.get() );
-  //     }
-  //   }
-  //   else {
-  //     push_ubuf( this, data.getName(),data.get() );
-  //   }
-  //   return false;
-  // }
-  // save() {
-  //   this.publishUp(ubuf,newPubSeq());
-  //   clear_ubuf();
-  // }
 }
 
 
@@ -489,10 +596,6 @@ class Pulsor {
   }
   getUpdateBuffer() {return ubuf;}
   confirmUpdateBuffer() {confirm_ubuf();}
-  save() {
-    newPubSeq()
-    //
-  }
   newSubscriber(consumer,fn) {
     return Subscriber.instance(consumer,fn);
   }
@@ -502,4 +605,7 @@ class Pulsor {
 }
 
 let pulsor = new Pulsor();
+pulsor.PulsorFieldSet = PulsorFieldSet;
+pulsor.PulsorFieldSetInstance = PulsorFieldSetInstance;
+
 module.exports = pulsor;

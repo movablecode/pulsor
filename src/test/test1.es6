@@ -37,12 +37,12 @@ describe('Pulsor Basic - Creation', ()=>{
     assert(user.set('name','sangmin'));
     assert(user.get('name')==='sangmin');
     user.set('age',17);
-    // user.save();
+    // user.flush();
     let user2 = User.instance();
     assert(user2.set('id','movablecode'));
     user2.set('name','Movablecode');
     user2.set('age',43);
-    user2.save();
+    user2.flush();
     // Pulsor.confirmUpdateBuffer();
     // kk[user] = 1;
     // kk[user2] = 2;
@@ -54,10 +54,11 @@ describe('Pulsor Basic - Creation', ()=>{
       fields: [
         ['name',{nid:1}],
         'age',
-        ['email',{nid:2}]
+        ['email',{nid:2}],
+        'weight'
       ]
     });
-    assert(User2.fieldCount()===4);
+    assert(User2.fieldCount()===5);
     assert(User2.field('email'));
     let field = User2.fieldN(2);
     assert(field);
@@ -79,7 +80,7 @@ describe('Pulsor Basic - Creation', ()=>{
     user2.set('name','Movablecode');
     user2.set('email','sangmin.lna@gmail.com');
     user2.set('age',41);
-    // user2.save();
+    // user2.flush();
     // let obj = send_buf[0];
     // let data = send_buf[1];
     // assert(obj[0]==='user2');
@@ -91,6 +92,12 @@ describe('Pulsor Basic - Creation', ()=>{
     user3.set('name','QNIX keyboard');
     user3.set('email','qnix@gmail.com');
     user3.set('age',19);
+    Pulsor.flushAll();
+    field = user3.getField('age');
+    sub.subscribe(field);
+    // console.log('has subscriber: ',field.hasSubscribers());
+    user3.set('age',20);
+    user3.set('weight',66);
     Pulsor.flushAll();
   });
   it ('Subscribers', ()=>{
@@ -113,7 +120,7 @@ describe('Pulsor Basic - Creation', ()=>{
     assert(user.set('name','sangmin'));
     assert(user.set('age',27));
     assert(user.set('name','sangmin')===false);
-    user.save();
+    user.flush();
     sub.obsolete();
   });
   it ('Aliased Field Set', ()=>{
