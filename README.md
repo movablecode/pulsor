@@ -1,4 +1,4 @@
-# Pulsor
+# Pulsor   (under construction...)
 
 Hierarchical Object Publisher.
 
@@ -6,11 +6,13 @@ Hierarchical Object Publisher.
 
 Pulsor's Object Publication is **very efficient**. because it distribute **changed properties only**, not a entire snapshot.
 
-It is for **efficient Realtime-Pushing** via WebSocket and **HTML UI rendering** especially with [React](https://facebook.github.io/react/) or TCP/IP native socket.
+It is for
+- **efficient Realtime-Pushing** via [WebSocket]()
+- **HTML UI rendering** especially with [React](https://facebook.github.io/react/)
+- generic pub/sub via TCP/IP native socket.
+- simplified in-process Message-Router/Bus.
 
-And used for generic/simplified in-process Message-Router/Bus or Broker.
-
-also, it is used for [Strobe](#). (client-side Javascript Framework)
+also, it is used for [Strobe](#). (declarative client-side javascript framework)
 
 ## Examples
 
