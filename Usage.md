@@ -1,5 +1,26 @@
 # Usage
 
+## Update from HTTP Server
+
+```javascript
+var obj = [
+  ["user","37"],
+  [
+    "name","sangmin",
+    "email","sangmin.lna@gmail.com",
+    "age",41
+  ]
+];
+Pulsor.upsert(obj);
+```
+
+
+## Subscribe from React Component
+
+```javascript
+```
+
+
 
 ### Define Model
 
