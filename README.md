@@ -8,7 +8,7 @@ Hierarchical Object Publisher.
 
 **Pulsor** is simple and minimal javascript [publish/subscribe pattern](https://en.wikipedia.org/wiki/Publish%E2%80%93subscribe_pattern) implementation with hierarchical publishing.
 
-Pulsor's Object Publication is **very efficient**. because it distribute **changed properties only**, not an entire snapshot.
+Pulsor's Object Publication is **very efficient**. because it distributes **changed properties only**, not an entire snapshot.
 
 It is for
 - **Efficient Realtime-Pushing** via [WebSocket]()
