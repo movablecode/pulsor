@@ -5,7 +5,7 @@ import mocha from 'gulp-mocha';
 import jshint from 'gulp-jshint';
 
 //  set ES6 option
-const babel_opt = {presets:['es2015']};
+const babel_opt = {presets:['es2015','react']};
 let build_list = [];
 let watch_list = [];
 let add_task_queue = (name,src,dist_js)=>{
@@ -42,7 +42,7 @@ let src_build_test = (name,src_es6,dist_js)=>{
 
 // src_build('build_index','src/index.es6','dist');
 src_copy('copy_lib','src/lib/*.js','dist/lib');
-src_build('build','src/pulsor.es6','dist');
+src_build('build','src/*.es6','dist');
 src_build_test('build_test','src/test/*.es6','dist/test');
 
 //  build all

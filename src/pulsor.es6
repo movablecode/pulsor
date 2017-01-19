@@ -53,6 +53,7 @@ function Queue(){var a=[],b=0;this.getLength=function(){return a.length-b};this.
     set server Flag, Pulsor Updater.
   */
   function thisIsServer() {
+    global._G = global;
     is_server = true;
     newPulsorUpdater = (param)=> {
       return new PulsorUpdater(param);
@@ -63,6 +64,9 @@ function Queue(){var a=[],b=0;this.getLength=function(){return a.length-b};this.
     set server Flag(=false), Pulsor Updater.
   */
   function thisIsBrowser() {
+    // if (window) {
+    //   window._G = window;
+    // }
     is_server = false;
     newPulsorUpdater = (param)=> {
       return new PulsorViewUpdater(param);

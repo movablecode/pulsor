@@ -7,6 +7,20 @@ should();
 
 require('../lib/Queue');
 import Pulsor from '../pulsor';
+// require('../pulsor.react');
+
+export class X1 {
+  emit(raw) {
+    console.log('in X1: ',raw);
+    this.doA("from X1");
+  }
+};
+
+export class X2 extends X1 {
+  doA(mm) {
+    console.log('in X2: ',mm);
+  }
+};
 
 describe('Pulsor Basic - Creation', ()=>{
   it ('Create', ()=>{
@@ -170,8 +184,16 @@ describe('Pulsor Basic - Creation', ()=>{
     let vt = Vote.gocInstance('a112');
     sub.subscribe(vt.gocField('rate'));
     vt.set('rate',20);
-    Pulsor.flushAll();
 
+    //
+    let x1 = new X2();  //  this is component: x1
+    let sub2 = Pulsor.newSubscriber(x1);
+    sub2.subscribe(vt.gocField('rate'));
+    vt.set('rate',30);
+
+
+    Pulsor.flushAll();
+    Pulsor.setMode("server");
   });
 
 });
