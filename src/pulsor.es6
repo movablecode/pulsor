@@ -1,7 +1,7 @@
 //  pulsor.es6
 
 /*
-  Queue : 성능 개선형 Queue 구현체, (Array 아님)
+  Queue : 성능 개선형 Queue 구현체, (Linked-List)
 */
 function Queue(){var a=[],b=0;this.getLength=function(){return a.length-b};this.isEmpty=function(){return 0==a.length};this.enqueue=function(b){a.push(b)};this.dequeue=function(){if(0!=a.length){var c=a[b];2*++b>=a.length&&(a=a.slice(b),b=0);return c}};this.peek=function(){return 0<a.length?a[b]:void 0}};
 
@@ -12,7 +12,7 @@ function Queue(){var a=[],b=0;this.getLength=function(){return a.length-b};this.
   let is_server = false;
 
   //
-  //  functions
+  //  utility functions
   //
   let isVoid = (v)=>{
     return ((v==='undefined') || (v===null));
@@ -109,14 +109,16 @@ function Queue(){var a=[],b=0;this.getLength=function(){return a.length-b};this.
     Pulsor Updater
 
       aggregate, assemble updated fields for SERVER
+      buffered, 
   */
   class PulsorUpdater {
     constructor(publisher) {
       this._publisher = publisher;
-      this._ubuf = [];
-      this._instance = undefined;
-      this._data = [];
-      this._in_updating = false;
+      this._ubuf = [];              //  updating buffer  ex) <[pub-id], [data], [pub-id], [data]...>
+      this._instance = undefined;   //  current instance of Model. temporary.
+      this._data = [];              //  updated key,data pairs
+      this._in_updating = false;    //  in updating flag. temporary.
+
     }
     get Buffer() {return this._ubuf;}
     trySetFlushable() {
@@ -154,14 +156,15 @@ function Queue(){var a=[],b=0;this.getLength=function(){return a.length-b};this.
     Pulsor Updater
 
       aggregate, assemble updated fields for BROWSER's View
+      buffered, 
   */
   class PulsorViewUpdater {
     constructor(publisher) {
       this._publisher = publisher;
-      this._ubuf = [];
-      this._instance = undefined;
-      this._data = [];
-      this._in_updating = false;
+      this._ubuf = [];              //  updating buffer  ex) <object, [data], object, [data]...>
+      this._instance = undefined;   //  current instance of Model. temporary.
+      this._data = [];              //  updated key,data pairs
+      this._in_updating = false;    //  in updating flag. temporary.
     }
     get Buffer() {return this._ubuf;}
     trySetFlushable() {
@@ -174,17 +177,17 @@ function Queue(){var a=[],b=0;this.getLength=function(){return a.length-b};this.
       if (this._instance!==obj) {
         this._instance = obj;
         this._data = [];
-        this._ubuf.push(obj.getPubId());
+        // this._ubuf.push(obj.getPubId());
+        this._ubuf.push(obj);
         this._ubuf.push(this._data);
       }
-      this._data.push(index);
+      this._data.push(index);   //  push key
       this._data.push(value);
     }
     flush() {
       if (this._in_updating) {
         this._publisher.publishUp(this._ubuf,newPubSeq());
         this.clear();
-        this._in_updating = false;
       }
     }
     clear() {
@@ -826,6 +829,14 @@ function Queue(){var a=[],b=0;this.getLength=function(){return a.length-b};this.
           break;
         default:
           break;
+      }
+    }
+    setMode(mode) {
+      if (mode==="server") {
+        thisIsServer();
+      }
+      else if (mode==="browser") {
+        thisIsBrowser();
       }
     }
   }

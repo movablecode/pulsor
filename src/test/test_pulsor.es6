@@ -157,6 +157,21 @@ describe('Pulsor Basic - Creation', ()=>{
   //  for Browser UI
   it ('Pulsor View Updater', ()=>{
     console.log("Pulsor View Updater");
+    Pulsor.setMode("browser");
+    //  prepare subscriber
+    let c = {
+      emit: (raw)=>{
+        console.log('VIEW: ',raw);
+      }
+    }
+    let sub = Pulsor.newSubscriber(c);
+    //
+    let Vote = Pulsor.gocModel('vote');
+    let vt = Vote.gocInstance('a112');
+    sub.subscribe(vt.gocField('rate'));
+    vt.set('rate',20);
+    Pulsor.flushAll();
+
   });
 
 });
