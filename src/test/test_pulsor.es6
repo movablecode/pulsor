@@ -6,7 +6,6 @@ let should = chai.should;
 should();
 
 require('../lib/Queue');
-// import Pulsor from 'lib/pulsor';
 import Pulsor from '../pulsor';
 
 describe('Pulsor Basic - Creation', ()=>{

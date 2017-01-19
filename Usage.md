@@ -18,6 +18,15 @@ Pulsor.upsert(obj);
 ## Subscribe from React Component
 
 ```javascript
+  // in React Component
+
+  componentDidMount() {
+    Pulsor.subscribe([["user","37"],["name","email"]], this);
+  }
+
+  componentWillUnmount() {
+    Pulsor.unsubscribe(this);
+  }
 ```
 
 
