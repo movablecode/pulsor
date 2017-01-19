@@ -13,6 +13,14 @@ let add_task_queue = (name,src,dist_js)=>{
   watch_list.push([src,name]);
 }
 
+let src_copy = (name,src,dist)=>{
+  add_task_queue(name,src,dist);
+  gulp.task(name, ()=> {
+    gulp.src(src)
+      .pipe(gulp.dest(dist));
+  });
+}
+
 let src_build = (name,src_es6,dist_js)=>{
   add_task_queue(name,src_es6,dist_js);
   gulp.task(name, ()=> {
@@ -32,11 +40,13 @@ let src_build_test = (name,src_es6,dist_js)=>{
   });
 };
 
-src_build('build_index','src/index.es6','dist');
+// src_build('build_index','src/index.es6','dist');
+src_copy('copy_lib','src/lib/*.js','dist/lib');
+src_build('build','src/pulsor.es6','dist');
 src_build_test('build_test','src/test/*.es6','dist/test');
 
 //  build all
-gulp.task('build_all', ['build_index','build_test'], ()=>{
+gulp.task('build_all', ['copy_lib','build','build_test'], ()=>{
   //
 });
 
