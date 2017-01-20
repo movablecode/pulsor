@@ -8,6 +8,7 @@ import jshint from 'gulp-jshint';
 const babel_opt = {presets:['es2015','react']};
 let build_list = [];
 let watch_list = [];
+
 let add_task_queue = (name,src,dist_js)=>{
   build_list.push(name);
   watch_list.push([src,name]);
