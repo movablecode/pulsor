@@ -20,6 +20,13 @@ function Queue(){var a=[],b=0;this.getLength=function(){return a.length-b};this.
   let getKeyCount = (o)=>{
     return Object.keys(o).length;
   }
+  let isArray = (o)=>{
+    if (Array.isArray)
+      return Array.isArray(o);
+    else {
+      return (o instanceof Array);
+    }
+  }
   let clearArray = (o)=>{
     o.length=0;
   }
@@ -831,7 +838,7 @@ function Queue(){var a=[],b=0;this.getLength=function(){return a.length-b};this.
       let cmd = item[0];
       let id_part,values,cb,params,topic;
       switch (cmd) {
-        case 'U':       //  Update Object
+        case 'U':       //  Upsert Object
           id_part = item[1];    //  ['user','anonymous']
           values = item[2];     //  ['name','anonymous','email':'anonymous@gmail.com']
           cb = item[3];         //  (m)=>{}
@@ -860,6 +867,14 @@ function Queue(){var a=[],b=0;this.getLength=function(){return a.length-b};this.
     getMode() {
       if (is_server) return "server";
       else return "browser";
+    }
+    upsert(obj) {
+      if (isArray(obj)) {
+        //
+      }
+      else {
+        //
+      };
     }
   }
 

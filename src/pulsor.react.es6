@@ -2,13 +2,31 @@
 
 export class PulsorReactComponent extends React.Component {
 
+  //  assign initial properties
+  //  update or insert data to Pulsor repository
   constructor(props) {
     super(props);
+    let bindings = props.bindings;
+    props.subscriptions = [];
+    if (!isArray(bindings)) {
+      bindings = [bindings];
+    }
+    let initial = {};
+    bindings.forEach(binding=>{
+      let model = binding.model;  delete binding.model;
+      let id = binding.id;        delete binding.id;
+      Object.assign(initial,binding);
+      Pulsor.upsert(model,id,binding);
+      props.subscriptions.push([model,id,binding.keys()]);
+    });
+    this.state = initial;
   }
 
   componentDidMount() {
     super.componentDidMount();
-
+    this.props.forEach(subs=>{
+      Pulsor.mount([[subs[0],subs[1]],subs[2]], this);
+    });
   }
 
   componentWillUnmount() {

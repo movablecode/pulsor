@@ -16,7 +16,8 @@ It is for
 - Generic pub/sub with Network and/or Persistence Resources (TCP/IP, Datbases, Etc)
 - Simplified in-process [Message-Router/Bus]().
 
-also, it is used for [Strobe](#). (declarative client-side framework using [React](https://facebook.github.io/react/)) and [Pulsor](https://github.com/movablecode/pulsor)
+also, it is used with [Strobe](#). (declarative client-side framework using [React](https://facebook.github.io/react/))
+
 
 ## Examples
 

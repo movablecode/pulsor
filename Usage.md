@@ -19,13 +19,20 @@ Pulsor.upsert(obj);
 
 ```javascript
   // in React Component
+  class Component1 extends Pulsor.Component {
 
-  componentDidMount() {
-    Pulsor.subscribe([["user","37"],["name","email"]], this);
-  }
+    constructor(props) {
+      super(props);
+    }
 
-  componentWillUnmount() {
-    Pulsor.unsubscribe(this);
+    componentDidMount() {
+      super.componentDidMount();
+    }
+
+    componentWillUnmount() {
+      super.componentWillUnmount();
+    }
+
   }
 ```
 
@@ -33,6 +40,7 @@ Pulsor.upsert(obj);
 
 ### Define Model
 
+```javascript
 var User = Pulsor.define('user',{
   fields: [
     'id',
@@ -58,3 +66,4 @@ User.select();
 
 //  not suitable for wide-table.
 //
+```

@@ -17,5 +17,13 @@ describe('Pulsor-React - Creation', ()=>{
   it ('Create', ()=>{
     assert(Pulsor);
     assert(Pulsor.getLocalCounter()===1);
+
+    // let x = new Component1({
+    //   bindings:{
+    //     model: 'xxx',
+    //     id: '',
+    //   }
+    // });
+
   });
 });
