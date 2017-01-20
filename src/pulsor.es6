@@ -58,7 +58,7 @@ function Queue(){var a=[],b=0;this.getLength=function(){return a.length-b};this.
     newPulsorUpdater = (param)=> {
       return new PulsorUpdater(param);
     }
-    console.log('THIS IS SERVER:PULSOR');
+    // console.log('THIS IS SERVER:PULSOR');
   }
   /**
     set server Flag(=false), Pulsor Updater.
@@ -71,7 +71,7 @@ function Queue(){var a=[],b=0;this.getLength=function(){return a.length-b};this.
     newPulsorUpdater = (param)=> {
       return new PulsorViewUpdater(param);
     }
-    console.log('THIS IS BROWSER:PULSOR');
+    // console.log('THIS IS BROWSER:PULSOR');
   }
 
 
@@ -157,7 +157,7 @@ function Queue(){var a=[],b=0;this.getLength=function(){return a.length-b};this.
   }
 
   /**
-    Pulsor Updater
+    Pulsor View Updater
 
       aggregate, assemble updated fields for BROWSER's View
       buffered, 
@@ -186,7 +186,7 @@ function Queue(){var a=[],b=0;this.getLength=function(){return a.length-b};this.
         this._ubuf.push(this._data);
       }
       this._data.push(index);   //  push key
-      this._data.push(value);
+      this._data.push(value);   //  push value
     }
     flush() {
       if (this._in_updating) {
@@ -785,16 +785,30 @@ function Queue(){var a=[],b=0;this.getLength=function(){return a.length-b};this.
     flushAll() {
       flush_updated_field_publisher();
     }
-    subscribe(model,id,fields) {
-      console.log('Pulsor Subscribed');
+    subscribe(model,id,fields,subs) {
+      let ins = Pulsor.gocModel(model).gocInstance(id);
+      fields.forEach(a=>{
+        subs.subscribe( ins.gocField(a) );
+      });
     }
-    unsubscribe(model,id,fields) {
-      console.log('Pulsor Unsubscribed');
+    unsubscribe(model,id,fields,subs) {
+      let ins = Pulsor.gocModel(model).gocInstance(id);
+      fields.forEach(a=>{
+        subs.unsubscribe( ins.gocField(a) );
+      });
     }
-    mount(model,id,fields) {
+    mount(model,id,fields,cons) {
       console.log(`Pulsor Mounted Model(${model}), ID(${id})`);
+      if (!cons._sub) {
+        cons._sub = Pulsor.newSubscriber(this);
+      }
+      this.subscribe(model,id,fields,cons._sub);
     }
-    unmount(model,id,fields) {
+    unmount(cons) {
+      if (cons._sub) {
+        cons._sub.dispose();
+        cons._sub = null;
+      }
       console.log('Pulsor Unmounted');
     }
     throwAction(cmd) {
@@ -842,6 +856,10 @@ function Queue(){var a=[],b=0;this.getLength=function(){return a.length-b};this.
       else if (mode==="browser") {
         thisIsBrowser();
       }
+    }
+    getMode() {
+      if (is_server) return "server";
+      else return "browser";
     }
   }
 

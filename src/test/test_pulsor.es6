@@ -11,16 +11,28 @@ import Pulsor from '../pulsor';
 
 export class X1 {
   emit(raw) {
-    console.log('in X1: ',raw);
+    // console.log('in X1: ',raw);
     this.doA("from X1");
   }
 };
 
 export class X2 extends X1 {
   doA(mm) {
-    console.log('in X2: ',mm);
+    // console.log('in X2: ',mm);
   }
 };
+
+/*
+  for Test Validation, buffering raw data
+*/
+let send_buf;
+let c = {
+  emit: (raw)=>{
+    send_buf = raw.slice();
+  }
+}
+
+
 
 describe('Pulsor Basic - Creation', ()=>{
   it ('Create', ()=>{
@@ -81,25 +93,17 @@ describe('Pulsor Basic - Creation', ()=>{
     assert(field.NID===2);
     let user2 = User2.instance();
     assert(user2.set('id','movablecode'));
-    let send_buf;
-    let c = {
-      emit: (raw)=>{
-        // send_buf = raw;
-        send_buf = raw.slice();
-        console.log('EMIT: ',raw);
-      }
-    }
     let sub = Pulsor.newSubscriber(c);
     c._sub = sub;
     sub.subscribe(user2);
     user2.set('name','Movablecode');
     user2.set('email','sangmin.lna@gmail.com');
     user2.set('age',41);
-    // user2.flush();
-    // let obj = send_buf[0];
-    // let data = send_buf[1];
-    // assert(obj[0]==='user2');
-    // assert(obj[1]==='movablecode');
+    user2.flush();
+    let obj = send_buf[0];
+    let data = send_buf[1];
+    assert(obj[0]==='user2');
+    assert(obj[1]==='movablecode');
 
     let user3 = User2.instance();
     assert(user3.set('id','qnix'));
@@ -116,11 +120,6 @@ describe('Pulsor Basic - Creation', ()=>{
     Pulsor.flushAll();
   });
   it ('Subscribers', ()=>{
-    let c = {
-      emit: (raw)=>{
-        console.log('EMIT: ',raw);
-      }
-    }
     let sub = Pulsor.newSubscriber(c);
     c._sub = sub;
     let User = Pulsor.findModel('user');
@@ -153,15 +152,8 @@ describe('Pulsor Basic - Creation', ()=>{
   it ('Instant Model', ()=>{
     let Vote = Pulsor.gocModel('vote');
     let vt = Vote.gocInstance('a110');
-
-    let c = {
-      emit: (raw)=>{
-        console.log('EMIT2: ',raw);
-      }
-    }
     let sub = Pulsor.newSubscriber(c);
     c._sub = sub;
-
     let fld = vt.gocField('rate');
     sub.subscribe(fld);
     vt.set('rate',10);
@@ -170,28 +162,20 @@ describe('Pulsor Basic - Creation', ()=>{
 
   //  for Browser UI
   it ('Pulsor View Updater', ()=>{
-    console.log("Pulsor View Updater");
+    assert(Pulsor.getMode()==="server");
     Pulsor.setMode("browser");
+    assert(Pulsor.getMode()==="browser");
     //  prepare subscriber
-    let c = {
-      emit: (raw)=>{
-        console.log('VIEW: ',raw);
-      }
-    }
     let sub = Pulsor.newSubscriber(c);
-    //
     let Vote = Pulsor.gocModel('vote');
     let vt = Vote.gocInstance('a112');
     sub.subscribe(vt.gocField('rate'));
     vt.set('rate',20);
-
     //
     let x1 = new X2();  //  this is component: x1
     let sub2 = Pulsor.newSubscriber(x1);
     sub2.subscribe(vt.gocField('rate'));
     vt.set('rate',30);
-
-
     Pulsor.flushAll();
     Pulsor.setMode("server");
   });
